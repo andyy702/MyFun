@@ -1,0 +1,27 @@
+<div class="grupo">
+    <h3>{{ nombre }}</h3>
+  
+    <div *ngIf="modo === 'mates' || modo === 'stickers-memes'" class="items-container">
+      <app-item 
+        *ngFor="let item of items" 
+        [item]="item" 
+        [seccionActiva]="seccionActiva"
+        [modo]="modo">
+      </app-item>
+    </div>
+    <div *ngIf="modo === 'tiktok'" class="items-container2">
+      <app-item 
+        *ngFor="let item of items" 
+        [item]="item" 
+        [seccionActiva]="seccionActiva"
+        [modo]="modo">
+      </app-item>
+    </div>
+  
+    <button class="video-btn" (click)="abrirModalItem()">
+      <span class="icon">+</span>
+      <span *ngIf="modo === 'mates'">Agregar Item</span>
+      <span *ngIf="modo === 'tiktok'">Agregar Tiktok</span>
+    </button>
+  </div>
+  

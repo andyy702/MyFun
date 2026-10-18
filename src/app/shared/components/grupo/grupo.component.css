@@ -1,0 +1,135 @@
+
+
+.grupo {
+  /* El grupo se organiza en una columna */
+  display: flex;
+  flex-direction: column;
+  /* Centra los elementos del grupo horizontalmente */
+  align-items: center;
+  /* Añade espacio entre los elementos */
+  gap: 20px;
+  /* Estilos para el contenedor del grupo */
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.6);
+  width: 100%;
+}
+
+.items-container {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;  /* 👈 hace que los hijos ocupen todo el ancho disponible */
+  gap: 20px;
+  width: 100%;
+}
+.items-container2 {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+/* Para pantallas grandes (PC) */
+@media (min-width: 1024px) {
+  .items-container2 {
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+}
+
+/* Para pantallas muy pequeñas (móvil) */
+@media (max-width: 480px) {
+  .items-container2 {
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+
+  .info h4 {
+    font-size: 12px;
+  }
+}
+
+
+.video-btn {
+  /* Ocupa el 100% del contenedor padre */
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 2px dashed #d3d3d3;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6c6c6c;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.video-btn:hover {
+
+  background-color: #f1f3f6;
+  /* Fondo gris claro al pasar mouse */
+
+  border-color: #999999;
+  /* Borde un poco más oscuro */
+
+  color: #000000;
+  /* Texto más oscuro */
+
+}
+
+/* 📱 En pantallas menores a 768px (móviles y tablets pequeñas) */
+@media (max-width: 768px) {
+  .grupo {
+    /* El grupo se organiza en una columna */
+    display: flex;
+    flex-direction: column;
+    /* Centra los elementos del grupo horizontalmente */
+    align-items: center;
+    /* Añade espacio entre los elementos */
+    gap: 20px;
+    /* Estilos para el contenedor del grupo */
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.6);
+    width: 95%;
+  }
+
+  .video-btn {
+    width: 100%;
+    padding: 12px;
+    font-size: 12px;
+  }
+
+}
+
+/* 📹 Ajustes para los videos dentro de un grupo */
+.video-item {
+  display: flex;
+  justify-content: center;   /* centra el video dentro del grupo */
+  width: 100%;
+}
+
+.video-item .video-container {
+  width: 95%;               /* ocupa casi todo el ancho del grupo */
+  max-width: 900px;         /* opcional: límite en pantallas grandes */
+  position: relative;
+  padding-bottom: 56.25%;   /* relación 16:9 */
+  height: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #000;         /* fondo negro mientras carga */
+}
+
+.video-item iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}

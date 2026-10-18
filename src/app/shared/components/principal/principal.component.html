@@ -1,0 +1,286 @@
+<div class="main-container">
+    <div *ngIf="modo === 'stickers-memes'">
+        <h2>😂 Mi Colección de Stickers y Memes</h2>
+        <p>Organiza, busca y usa tus stickers y memes favoritos</p>
+    </div>
+    <div *ngIf="modo === 'tiktok'">
+        <h2>📱 Mi Colección de TikToks</h2>
+        <p>Organiza y guarda tus vídeos favoritos de TikTok</p>
+    </div>
+
+    <!-- Barra de búsqueda y filtros -->
+    <div class="filters" *ngIf="modo === 'stickers-memes' || modo === 'tiktok'">
+        <div>
+            <label *ngIf="modo === 'stickers-memes'">Buscar por nombre/tags:</label>
+            <label *ngIf="modo === 'tiktok'">Buscar videos:</label>
+            <input *ngIf="modo === 'stickers-memes'" type="text" placeholder="Buscar stickers..."
+                [(ngModel)]="busqueda">
+            <input *ngIf="modo === 'tiktok'" type="text" placeholder="Titulo, descripcion, tags..."
+                [(ngModel)]="busqueda">
+        </div>
+        <div>
+            <label *ngIf="modo === 'stickers-memes'">Filtrar por categoría:</label>
+            <label *ngIf="modo === 'tiktok'">Filtrar por autor:</label>
+            <select [(ngModel)]="categoriaSeleccionada" *ngIf="modo === 'stickers-memes'">
+                <option value="">Todas</option>
+                <option *ngFor="let cat of categorias">{{ cat }}</option>
+            </select>
+            <input *ngIf="modo === 'tiktok'" type="text" placeholder="@username" [(ngModel)]="busqueda">
+        </div>
+        <button (click)="limpiarFiltros()">Limpiar Filtros</button>
+    </div>
+
+
+    <!-- Botón para agregar nueva sección -->
+    <div class="seccion-controls">
+        <button (click)="abrirModalSeccion()" class="add-section-btn">
+            <span class="icon">+</span>
+            <span *ngIf="modo === 'mates'">Agregar Nueva Sección</span>
+            <span *ngIf="modo === 'stickers-memes' || modo === 'tiktok'">Nueva Categoria</span>
+        </button>
+    </div>
+
+    <!-- Pestañas dinámicas -->
+    <div role="tablist" class="tab-list-container">
+        <button *ngFor="let seccion of seccionesDisponibles" type="button" role="tab" class="tab-button"
+            [class.active]="seccionActiva === seccion" (click)="seccionActiva = seccion">
+
+            <!-- Íconos dinámicos según la sección -->
+            <ng-container *ngIf="modo === 'mates'; else iconosStickersMemes">
+                <ng-container [ngSwitch]="seccion">
+                    <svg *ngSwitchCase="'videos'" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-video w-4 h-4" aria-hidden="true">
+                        <path d="m16 13 5.223 3.482a.5.5 0 0 0 .777-.416V7.87a.5.5 0 0 0-.752-.432L16 10.5"></path>
+                        <rect x="2" y="6" width="14" height="12" rx="2"></rect>
+                    </svg>
+
+                    <svg *ngSwitchCase="'libros'" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-book w-4 h-4" aria-hidden="true">
+                        <path
+                            d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H6.5a1 1 0 0 1 0-5H20">
+                        </path>
+                    </svg>
+
+                    <svg *ngSwitchCase="'articulos'" xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                        viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-file-text w-4 h-4" aria-hidden="true">
+                        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"></path>
+                        <path d="M14 2v4a2 2 0 0 0 2 2h4"></path>
+                        <path d="M10 9H8"></path>
+                        <path d="M16 13H8"></path>
+                        <path d="M16 17H8"></path>
+                    </svg>
+
+                    <svg *ngSwitchDefault xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" class="lucide lucide-folder w-4 h-4" aria-hidden="true">
+                        <path d="M10 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-8l-2-2Z">
+                        </path>
+                    </svg>
+                </ng-container>
+            </ng-container>
+            <ng-template #iconosStickersMemes>
+                <ng-container *ngIf="modo === 'stickers-memes'; else iconosTiktok">
+                    <ng-container [ngSwitch]="seccion">
+                        <span *ngSwitchCase="'Stickers'">😊</span>
+                        <span *ngSwitchCase="'Memes'">😂</span>
+                        <span *ngSwitchCase="'gifs'">🎬</span>
+                        <span *ngSwitchDefault>📂</span>
+                    </ng-container>
+                </ng-container>
+            </ng-template>
+            <ng-template #iconosTiktok>
+                <ng-container [ngSwitch]="seccion">
+                    <span *ngSwitchCase="'Favoritos'">⭐</span>
+                    <span *ngSwitchCase="'Deportes'">⚽</span>
+                    <span *ngSwitchCase="'Trending'">🔥</span>
+                    <span *ngSwitchDefault>📂</span>
+                </ng-container>
+            </ng-template>
+
+            <span>{{ seccion | titlecase }}</span>
+        </button>
+    </div>
+
+    <!-- Grupos de la sección activa -->
+    <div *ngFor="let grupo of gruposSeccionActiva">
+        <app-grupo [nombre]="grupo.nombre" [items]="grupo.items" [seccionActiva]="seccionActiva" [modo]="modo"
+            (agregarItem)="abrirModalItem($event)">
+        </app-grupo>
+        <div class="group-actions" *ngIf="modo === 'stickers-memes'">
+            <button class="action-btn" (click)="abrirModalUpload(grupo.nombre)">
+                <span class="icon">📁</span>
+                <span>Subir Archivos</span>
+            </button>
+
+            <button class="action-btn" (click)="abrirModalImportTelegram(grupo.nombre)">
+                <span class="icon">💬</span>
+                <span>Importar Telegram</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Botón para agregar nuevo grupo -->
+    <button class="group-btn" (click)="abrirModalGrupo()">
+        <span class="icon">+</span>
+        <span *ngIf="modo === 'mates'">Agregar Nuevo Grupo</span>
+        <span *ngIf="modo === 'stickers-memes' || modo === 'tiktok'">Nueva Coleccion</span>
+    </button>
+
+    <!-- Modal para agregar nueva sección -->
+    <div *ngIf="mostrarModalSeccion" class="modal-overlay" (click)="cerrarModalSeccion()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 *ngIf="modo === 'mates'">Agregar Nueva Sección</h3>
+                <h3 *ngIf="modo === 'stickers-memes'">Agregar Nueva Categoría</h3>
+                <h3 *ngIf="modo === 'tiktok'">Nueva Categoría</h3>
+                <button class="close-btn" (click)="cerrarModalSeccion()">×</button>
+            </div>
+            <div class="modal-body">
+                <label for="nombreSeccion" *ngIf="modo === 'mates'">Nombre de la sección:</label>
+                <label for="nombreSeccion" *ngIf="modo === 'stickers-memes' || modo === 'tiktok'">
+                    Nombre de la categoría:
+                </label>
+                <input id="nombreSeccion" type="text" [(ngModel)]="nombreNuevaSeccion" [placeholder]="modo === 'mates' ? 'Ej: Geometría, Estadística...' : 
+                    modo === 'stickers-memes' ? 'Ej: Reacciones, Humor...' : 'Ej: Musico, Humor, Deportes...' "
+                    class="modal-input">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" (click)="cerrarModalSeccion()">Cancelar</button>
+                <button class="btn-confirm" (click)="agregarNuevaSeccion()"
+                    [disabled]="!nombreNuevaSeccion || nombreNuevaSeccion.trim() === ''">
+                    <span *ngIf="modo === 'mates'">Agregar Sección</span>
+                    <span *ngIf="modo === 'stickers-memes'">Agregar Categoría</span>
+                    <span *ngIf="modo === 'tiktok'">Crear</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar nuevo grupo -->
+    <div *ngIf="mostrarModalGrupo" class="modal-overlay" (click)="cerrarModalGrupo()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 *ngIf="modo === 'mates'">Agregar Nuevo Grupo</h3>
+                <h3 *ngIf="modo === 'stickers-memes' || modo === 'tiktok'">Agregar Nueva Coleccion</h3>
+                <button class="close-btn" (click)="cerrarModalGrupo()">×</button>
+            </div>
+            <div class="modal-body">
+                <label for="nombreGrupo" *ngIf="modo === 'mates'">Nombre del grupo:</label>
+                <label for="nombreGrupo" *ngIf="modo === 'stickers-memes' || modo === 'tiktok'">Nombre de la coleccion:</label>
+
+                <input id="nombreGrupo" type="text" [(ngModel)]="nombreNuevoGrupo"
+                    [placeholder]="modo === 'mates' ? 'Ej: Integrales, Límites...' : 'Ej: Reacciones, Animales...'"
+                    class="modal-input">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" (click)="cerrarModalGrupo()">Cancelar</button>
+                <button class="btn-confirm" (click)="agregarNuevoGrupo()"
+                    [disabled]="!nombreNuevoGrupo || nombreNuevoGrupo.trim() === ''">
+                    <span *ngIf="modo === 'mates'">Agregar Grupo</span>
+                    <span *ngIf="modo === 'stickers-memes'">Agregar Coleccion</span>
+                    <span *ngIf="modo === 'tiktok'">Crear</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para agregar nuevo item -->
+    <div *ngIf="mostrarModalItem" class="modal-overlay" (click)="cerrarModalItem()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3 *ngIf="modo === 'mates' || modo === 'stickers-memes'">
+                    Agregar Item a: {{ grupoSeleccionado }}
+                </h3>
+                <h3 *ngIf="modo === 'tiktok'">
+                    Guardar video en: {{ grupoSeleccionado }}
+                </h3>
+                <button class="close-btn" (click)="cerrarModalItem()">×</button>
+            </div>
+            <div class="modal-body">
+                <label for="linkItem" *ngIf="modo === 'mates' || modo === 'stickers-memes'">
+                    URL del recurso:
+                </label>
+                <label for="linkItem" *ngIf="modo === 'tiktok'">
+                    URL del video de Tiktok:
+                </label>
+                <input *ngIf="modo === 'mates' || modo === 'stickers-memes'" 
+                id="linkItem" type="url" [(ngModel)]="linkNuevoItem"
+                    placeholder="https://youtube.com/watch?v=..." class="modal-input">
+
+                <input *ngIf="modo === 'tiktok'" 
+                id="linkItem" type="url" [(ngModel)]="linkNuevoItem"
+                    placeholder="https://www.tiktok.com/@usuario/video/123456789" class="modal-input">
+
+                <div *ngIf="modo === 'mates' || modo === 'stickers-memes'" class="helper-text">
+                    <small>Puedes agregar links de YouTube, libros de Google Books, artículos científicos, PDFs,
+                        etc.</small>
+                </div>
+                <div *ngIf="modo === 'tiktok'" class="nota">
+                    <p class="text-sm text-blue-800">
+                        <strong>Nota:</strong> 
+                        Solo se guardará la referencia al video. Al hacer clic se abrirá en TikTok.
+                    </p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" (click)="cerrarModalItem()">Cancelar</button>
+                <button *ngIf="modo === 'mates' || modo === 'stickers-memes'"
+                class="btn-confirm" (click)="agregarNuevoItem()"
+                    [disabled]="!linkNuevoItem || linkNuevoItem.trim() === ''">
+                    Agregar Item
+                </button>
+                <button *ngIf="modo === 'tiktok'"
+                class="btn-confirm" (click)="agregarNuevoTiktok()"
+                    [disabled]="!linkNuevoItem || linkNuevoItem.trim() === ''">
+                    Guardar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal SUBIR ARCHIVOS -->
+    <div *ngIf="mostrarModalUpload" class="modal-overlay" (click)="cerrarModalUpload()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Subir Archivos a: {{ grupoSeleccionado }}</h3>
+                <button class="close-btn" (click)="cerrarModalUpload()">×</button>
+            </div>
+            <div class="modal-body">
+                <input type="file" multiple (change)="onFileUpload($event)"
+                    accept=".webp,image/png,image/jpeg,image/gif">
+                <div class="helper-text">
+                    <small>Formatos: WebP / JPG / PNG / GIF. Máx 5MB por archivo.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" (click)="cerrarModalUpload()">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal IMPORTAR TELEGRAM -->
+    <div *ngIf="mostrarModalImportTelegram" class="modal-overlay" (click)="cerrarModalImportTelegram()">
+        <div class="modal-content" (click)="$event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Importar pack de Telegram a: {{ grupoSeleccionado }}</h3>
+                <button class="close-btn" (click)="cerrarModalImportTelegram()">×</button>
+            </div>
+            <div class="modal-body">
+                <label for="urlTelegram">URL del pack (t.me/addstickers/...)</label>
+                <input id="urlTelegram" type="text" [(ngModel)]="urlTelegram"
+                    placeholder="https://t.me/addstickers/packname" class="modal-input">
+                <div class="helper-text">
+                    <small>Coloca la URL del pack de Telegram y presiona importar.</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" (click)="cerrarModalImportTelegram()">Cancelar</button>
+                <button class="btn-confirm" (click)="importarDeTelegram()"
+                    [disabled]="!urlTelegram || !grupoSeleccionado">Importar</button>
+            </div>
+        </div>
+    </div>
+</div>

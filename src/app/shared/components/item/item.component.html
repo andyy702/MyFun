@@ -1,0 +1,86 @@
+<div class="item">
+  <!-- Tiktok -->
+  <div *ngIf="modo === 'tiktok' && isMobile">
+    <a [href]="item.link" target="_blank" class="thumb">
+      <img [src]="item.thumb" alt="{{ item.titulo }}">
+      <span class="views">{{ item.views }}</span>
+      <span class="duration">{{ item.duration }}</span>
+    </a>
+  
+    <div class="info">
+      <h4>{{ item.titulo }}</h4>
+      <p class="autor">@{{ item.autor }}</p>
+      <div class="tags">
+        <span *ngFor="let tag of item.tags" class="tag">#{{ tag }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ✅ Vista Embed Oficial (usa el widget de TikTok) -->
+<div *ngIf="modo === 'tiktok' && !isMobile" class="tiktok-embed-container">
+  <blockquote class="tiktok-embed"
+              [attr.cite]="item.link"
+              [attr.data-video-id]="extraerVideoId(item.link)"
+              style="max-width: 605px;min-width: 325px;">
+    <section></section>
+  </blockquote>
+</div>
+
+  <!-- Stickers, memes, gifs -->
+  <div *ngIf="seccionActiva === 'sticker' || seccionActiva === 'Memes' || seccionActiva === 'gif'">
+
+    <!-- Para stickers animados (.tgs) -->
+    <ng-lottie *ngIf="lottieOptions?.animationData" [options]="lottieOptions"
+      style="width: 120px; height: 120px; display: block;">
+    </ng-lottie>
+
+    <!-- Si es imagen (jpg, png, webp, gif) -->
+    <img *ngIf="item.mimeType?.startsWith('image/')" [src]="item.link" class="item-thumb">
+
+    <!-- Si es video (ej. gif convertido en mp4 en móvil) -->
+    <video *ngIf="item.mimeType?.startsWith('video/')" [src]="item.link" autoplay loop muted playsinline>
+    </video>
+
+
+    <div class="detalle">
+      <strong>{{ item.nombre }}</strong>
+      <p>{{ item.categoria }}</p>
+    </div>
+  </div>
+
+
+
+  <!-- Video de YouTube -->
+  <div *ngIf="safeUrl" class="video-container">
+    <iframe [src]="safeUrl" frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen>
+    </iframe>
+  </div>
+
+
+  <!-- Libro -->
+  <div *ngIf="item.link && esLibro(item.link)">
+    <a [href]="item.link" target="_blank">
+      <img [src]="getPortadaLibro(item.link)" alt="Portada del libro" class="portada">
+    </a>
+  </div>
+
+  <!-- Artículo -->
+  <div *ngIf="item.link && esArticulo(item.link)">
+    <a [href]="item.link" target="_blank">
+      <img [src]="getPortadaArticulo(item.link)" alt="Artículo científico" class="portada">
+    </a>
+  </div>
+
+  <!-- PDF -->
+  <div *ngIf="item.link && esPDF(item.link)">
+    <a [href]="item.link" target="_blank">📘 Ver PDF</a>
+  </div>
+
+  <!-- Genérico -->
+  <div *ngIf="!esYoutube(item.link) && !esLibro(item.link) && !esArticulo(item.link) && !esPDF(item.link)
+              && !item.animationData && !(item.link?.endsWith('.webp')) && !(item.link?.endsWith('.webm'))">
+    <a [href]="item.link" target="_blank">🔗 Ver recurso</a>
+  </div>
+</div>
