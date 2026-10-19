@@ -2,16 +2,103 @@ import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
 import zlib from "zlib";
+import "dotenv/config";
 import axios from "axios";
 import * as cheerio from "cheerio";
+import pg from "pg";
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// ⚠️ pon tu token real aquí (NO lo subas a GitHub)
-const TOKEN = "8431310356:AAEC0RiKTtBPLFKu29hdxL3EPyywdDlTCV4";
+// Variables de entorno (backend/.env en tu PC, panel de Koyeb en producción)
+const TOKEN = process.env.TELEGRAM_TOKEN;
+const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
 
-app.use(cors());
+// En producción define ALLOWED_ORIGIN con la URL de Vercel
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN || true }));
+app.use(express.json());
+
+const pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+});
+
+/* ---------------- Colecciones (Supabase) ---------------- */
+
+const MODOS = ["tiktok", "mates"];
+const checkModo = (req, res, next) =>
+    MODOS.includes(req.params.modo)
+        ? next()
+        : res.status(400).json({ error: "Modo inválido" });
+
+app.get("/api/colecciones/:modo", checkModo, async (req, res) => {
+    const { rows } = await pool.query(
+        `select s.nombre as seccion, g.nombre as grupo, i.id, i.link, i.meta
+         from secciones s
+         left join grupos g on g.seccion_id = s.id
+         left join items i on i.grupo_id = g.id
+         where s.modo = $1
+         order by s.id, g.id, i.id`,
+        [req.params.modo]
+    );
+
+    const secciones = [];
+    for (const r of rows) {
+        let s = secciones.find(x => x.nombre === r.seccion);
+        if (!s) secciones.push(s = { nombre: r.seccion, grupos: [] });
+        if (!r.grupo) continue;
+        let g = s.grupos.find(x => x.nombre === r.grupo);
+        if (!g) s.grupos.push(g = { nombre: r.grupo, items: [] });
+        if (r.id) g.items.push({ id: r.id, link: r.link, ...r.meta });
+    }
+    res.json(secciones);
+});
+
+app.post("/api/colecciones/:modo/secciones", checkModo, async (req, res) => {
+    await pool.query(
+        "insert into secciones (modo, nombre) values ($1, $2) on conflict do nothing",
+        [req.params.modo, req.body.nombre]
+    );
+    res.sendStatus(201);
+});
+
+app.post("/api/colecciones/:modo/grupos", checkModo, async (req, res) => {
+    const { seccion, nombre } = req.body;
+    await pool.query(
+        `insert into grupos (seccion_id, nombre)
+         select id, $3 from secciones where modo = $1 and nombre = $2
+         on conflict do nothing`,
+        [req.params.modo, seccion, nombre]
+    );
+    res.sendStatus(201);
+});
+
+app.post("/api/colecciones/:modo/items", checkModo, async (req, res) => {
+    const { seccion, grupo, link, meta = {} } = req.body;
+    const { rows } = await pool.query(
+        `insert into items (grupo_id, link, meta)
+         select g.id, $4, $5 from grupos g
+         join secciones s on s.id = g.seccion_id
+         where s.modo = $1 and s.nombre = $2 and g.nombre = $3
+         on conflict (grupo_id, link) do update set meta = excluded.meta
+         returning *`,
+        [req.params.modo, seccion, grupo, link, meta]
+    );
+    rows.length
+        ? res.status(201).json(rows[0])
+        : res.status(404).json({ error: "El grupo no existe" });
+});
+
+/* ---------------- Telegram ---------------- */
+
+// Sirve archivos de Telegram sin exponer el token al navegador
+app.get("/api/file/*path", async (req, res) => {
+    const filePath = req.params.path.join("/");
+    const r = await fetch(`https://api.telegram.org/file/bot${TOKEN}/${filePath}`);
+    if (!r.ok) return res.sendStatus(r.status);
+    res.set("Content-Type", r.headers.get("content-type"));
+    res.send(Buffer.from(await r.arrayBuffer()));
+});
 
 // Obtener stickers de un set
 app.get("/api/stickers/:setName", async (req, res) => {
@@ -64,7 +151,8 @@ app.get("/api/stickers/:setName", async (req, res) => {
                         console.error("❌ Error procesando .tgs:", err);
                     }
                 } else {
-                    stickerData.fileUrl = fileUrl;
+                    // URL del propio backend: no incluye el token
+                    stickerData.fileUrl = `${PUBLIC_URL}/api/file/${filePath}`;
                 }
                 console.log(stickerData);
                 return stickerData;
@@ -77,6 +165,8 @@ app.get("/api/stickers/:setName", async (req, res) => {
         res.status(500).json({ error: "Error interno del servidor" });
     }
 });
+
+/* ---------------- TikTok (scraping, puede fallar en producción) ---------------- */
 
 app.get("/api/tiktok", async (req, res) => {
     try {

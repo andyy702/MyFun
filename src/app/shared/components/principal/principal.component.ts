@@ -65,8 +65,20 @@ export class PrincipalComponent {
     );
   }
 
+  // Solo TikTok y Mates (YouTube/libros/artículos) se guardan en Supabase
+  private get persiste() { return this.modo === 'tiktok' || this.modo === 'mates'; }
+  private get api() { return `${environment.backendUrl}/api/colecciones/${this.modo}`; }
+
   ngOnInit() {
-    if (this.secciones.length > 0) {
+    if (this.persiste) {
+      this.http.get<any[]>(this.api).subscribe({
+        next: (data) => {
+          this.secciones = data;
+          if (data.length) this.seccionActiva = data[0].nombre;
+        },
+        error: (err) => console.error('Error al cargar la colección:', err)
+      });
+    } else if (this.secciones.length > 0) {
       this.seccionActiva = this.secciones[0].nombre;
     }
   }
@@ -89,12 +101,13 @@ export class PrincipalComponent {
   }
 
   agregarNuevaSeccion() {
-    if (this.nombreNuevaSeccion.trim() && !this.secciones.find(s => s.nombre.toLowerCase() === this.nombreNuevaSeccion.toLowerCase())) {
-      this.secciones.push({
-        nombre: this.nombreNuevaSeccion,
-        grupos: []
-      });
-      this.seccionActiva = this.nombreNuevaSeccion.toLowerCase() as any;
+    const nombre = this.nombreNuevaSeccion.trim();
+    if (nombre && !this.secciones.find(s => s.nombre.toLowerCase() === nombre.toLowerCase())) {
+      this.secciones.push({ nombre, grupos: [] });
+      this.seccionActiva = nombre; // antes se pasaba a minúsculas y no coincidía con el nombre
+      if (this.persiste) {
+        this.http.post(`${this.api}/secciones`, { nombre }).subscribe();
+      }
       this.cerrarModalSeccion();
     }
   }
@@ -111,13 +124,14 @@ export class PrincipalComponent {
   }
 
   agregarNuevoGrupo() {
-    if (this.nombreNuevoGrupo.trim()) {
+    const nombre = this.nombreNuevoGrupo.trim();
+    if (nombre) {
       const seccion = this.secciones.find(s => s.nombre === this.seccionActiva);
       if (seccion) {
-        seccion.grupos.push({
-          nombre: this.nombreNuevoGrupo,
-          items: []
-        });
+        seccion.grupos.push({ nombre, items: [] });
+        if (this.persiste) {
+          this.http.post(`${this.api}/grupos`, { seccion: this.seccionActiva, nombre }).subscribe();
+        }
       }
       this.cerrarModalGrupo();
       this.nombreNuevoGrupo = '';
@@ -161,66 +175,52 @@ export class PrincipalComponent {
       // 4. Insertar en el array real
       grupo.items.push({ link: linkProcesado });
 
-      // 5. Reset modal
+      // 5. Guardar en el backend (Supabase)
+      if (this.persiste) {
+        this.http.post(`${this.api}/items`, {
+          seccion: this.seccionActiva,
+          grupo: this.grupoSeleccionado,
+          link: linkProcesado
+        }).subscribe();
+      }
+
+      // 6. Reset modal
       this.cerrarModalItem();
       this.linkNuevoItem = '';
     }
   }
   agregarNuevoTiktok() {
-    const link = this.linkNuevoItem
-    if (link) {
-      // 1. Buscar la sección activa directamente
-      const seccion = this.secciones.find(s => s.nombre === this.seccionActiva);
-      if (!seccion) return;
+    const link = this.linkNuevoItem.trim().split('?')[0];
+    const grupo = this.secciones.find(s => s.nombre === this.seccionActiva)
+      ?.grupos.find((g: any) => g.nombre === this.grupoSeleccionado);
+    if (!link || !grupo) return;
 
-      // 2. Buscar el grupo real dentro de esa sección
-      const grupo = seccion.grupos.find((g: any) => g.nombre === this.grupoSeleccionado);
-      if (!grupo) return;
+    // Guardamos los valores antes de cerrar el modal (que los limpia)
+    const seccion = this.seccionActiva;
+    const nombreGrupo = this.grupoSeleccionado;
 
-      // Llama a oEmbed de TikTok
-      this.http.get<any>(`https://www.tiktok.com/oembed?url=${link}`).subscribe({
-        next: (data) => {
-          const nuevoItem = {
-            link: link,
-            thumb: data.thumbnail_url,
-            titulo: data.title,
-            autor: data.author_name,
-            tags: [],
-            views: '0',
-            duration: '--:--'
-          };
+    // oEmbed de TikTok: título, autor y miniatura
+    this.http.get<any>(`https://www.tiktok.com/oembed?url=${encodeURIComponent(link)}`).subscribe({
+      next: (data) => {
+        const meta = {
+          thumb: data.thumbnail_url,
+          titulo: data.title,
+          autor: data.author_name,
+          tags: [],
+          views: '0',
+          duration: '--:--'
+        };
 
-          // 👇 actualizamos inmutablemente para que Angular detecte cambios
-          grupo.items = [...grupo.items, nuevoItem];
-          console.log('TikTok agregado:', nuevoItem);
-        },
-        error: (err) => {
-          console.error('Error al obtener datos de TikTok:', err);
-        }
-      });
+        // 👇 actualizamos inmutablemente para que Angular detecte cambios
+        grupo.items = [...grupo.items, { link, ...meta }];
 
+        // Guardar en el backend (Supabase)
+        this.http.post(`${this.api}/items`, { seccion, grupo: nombreGrupo, link, meta }).subscribe();
+      },
+      error: (err) => console.error('Error al obtener datos de TikTok:', err)
+    });
 
-      const cleanUrl = link.split("?")[0];
-      this.http.get<any>(`${environment.backendUrl}/api/tiktok?url=${cleanUrl}`).subscribe({
-        next: (data) => {
-          const nuevoItem = {
-            link: link,
-            thumb: data.thumbnail,
-            titulo: data.titulo,
-            autor: data.autor,
-            musica: data.musica,
-            tags: data.tags,
-            views: data.stats.playCount,
-            duration: data.duracion + 's'
-          };
-          console.log(nuevoItem)
-        },
-        error: (err) => console.error(err)
-      });
-
-      this.cerrarModalItem();
-      this.linkNuevoItem = '';
-    }
+    this.cerrarModalItem();
   }
 
 

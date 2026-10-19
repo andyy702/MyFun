@@ -17,13 +17,20 @@
   </div>
 
   <!-- ✅ Vista Embed Oficial (usa el widget de TikTok) -->
+<!-- Vista escritorio: tarjeta con reproductor bajo demanda -->
 <div *ngIf="modo === 'tiktok' && !isMobile" class="tiktok-embed-container">
-  <blockquote class="tiktok-embed"
-              [attr.cite]="item.link"
-              [attr.data-video-id]="extraerVideoId(item.link)"
-              style="max-width: 605px;min-width: 325px;">
-    <section></section>
-  </blockquote>
+  <iframe *ngIf="tiktokReproduciendo && tiktokEmbedUrl" [src]="tiktokEmbedUrl"
+          style="width: 325px; height: 740px; border: 0;"
+          allow="encrypted-media; fullscreen" allowfullscreen></iframe>
+
+  <div *ngIf="!tiktokReproduciendo" class="info">
+    <img *ngIf="item.thumb" [src]="item.thumb" alt="{{ item.titulo }}"
+         style="width: 325px; max-width: 100%; border-radius: 8px;">
+    <h4>{{ item.titulo }}</h4>
+    <p class="autor">@{{ item.autor }}</p>
+    <button type="button" (click)="reproducirTiktok()">▶ Reproducir aquí</button>
+    <a [href]="item.link" target="_blank">Abrir en TikTok</a>
+  </div>
 </div>
 
   <!-- Stickers, memes, gifs -->
@@ -79,7 +86,7 @@
   </div>
 
   <!-- Genérico -->
-  <div *ngIf="!esYoutube(item.link) && !esLibro(item.link) && !esArticulo(item.link) && !esPDF(item.link)
+  <div *ngIf="modo !== 'tiktok' && !esYoutube(item.link) && !esLibro(item.link) && !esArticulo(item.link) && !esPDF(item.link)
               && !item.animationData && !(item.link?.endsWith('.webp')) && !(item.link?.endsWith('.webm'))">
     <a [href]="item.link" target="_blank">🔗 Ver recurso</a>
   </div>

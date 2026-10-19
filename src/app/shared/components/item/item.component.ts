@@ -1,27 +1,41 @@
 import { HttpClient } from '@angular/common/http';
-import { AfterViewChecked, AfterViewInit, Component, ElementRef, Input, OnChanges, SimpleChanges } from '@angular/core';
+import {
+  AfterViewChecked,
+  AfterViewInit,
+  Component,
+  ElementRef,
+  Input,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { AnimationOptions } from 'ngx-lottie';
 import { environment } from 'src/environments/environment';
 
-
 @Component({
   selector: 'app-item',
   templateUrl: './item.component.html',
-  styleUrls: ['./item.component.css']
+  styleUrls: ['./item.component.css'],
 })
 export class ItemComponent implements OnChanges, AfterViewInit {
   private _item!: { link: string };
   safeUrl: SafeResourceUrl | null = null;
   @Input() modo: string = '';
+  private static tiktokTimer: any;
+  tiktokEmbedUrl: SafeResourceUrl | null = null;
+  tiktokReproduciendo = false;
+  reproducirTiktok() {
+    this.tiktokReproduciendo = true;
+  }
 
   @Input()
   set item(value: any) {
     this._item = value;
     this.updateSafeUrl();
-
   }
-  get item() { return this._item; }
+  get item() {
+    return this._item;
+  }
 
   @Input() seccionActiva: string = '';
 
@@ -30,33 +44,17 @@ export class ItemComponent implements OnChanges, AfterViewInit {
 
   private alreadyProcessed = false;
 
-  constructor(private sanitizer: DomSanitizer, private el: ElementRef,private http: HttpClient) {
-
-  }
-
-
+  constructor(
+    private sanitizer: DomSanitizer,
+    private el: ElementRef,
+    private http: HttpClient,
+  ) {}
 
   ngAfterViewInit() {
-    if (this.modo === 'tiktok') {
-      this.injectTikTokScript();
-    }
+    
   }
 
-  private injectTikTokScript() {
-    // Elimina scripts anteriores para evitar duplicados
-    const oldScript = document.querySelector('script[src="https://www.tiktok.com/embed.js"]');
-    if (oldScript) {
-      oldScript.remove();
-    }
-
-    // Crea un nuevo script
-    const script = document.createElement('script');
-    script.src = 'https://www.tiktok.com/embed.js';
-    script.async = true;
-
-    // Inyecta después del bloque actual
-    this.el.nativeElement.appendChild(script);
-  }
+  
 
   extraerVideoId(link: string): string {
     const match = link.match(/video\/(\d+)/);
@@ -64,6 +62,18 @@ export class ItemComponent implements OnChanges, AfterViewInit {
   }
 
   ngOnChanges(changes: SimpleChanges): void {
+    if (
+      (changes['item'] || changes['modo']) &&
+      this.modo === 'tiktok' &&
+      this.item?.link
+    ) {
+      const id = this.extraerVideoId(this.item.link);
+      this.tiktokEmbedUrl = id
+        ? this.sanitizer.bypassSecurityTrustResourceUrl(
+            `https://www.tiktok.com/embed/v2/${id}`,
+          )
+        : null;
+    }
     if (changes['item'] && this.item?.link && this.esYoutube(this.item.link)) {
       const url = this.transformYoutube(this.item.link);
 
@@ -76,8 +86,6 @@ export class ItemComponent implements OnChanges, AfterViewInit {
       }, 50);
     }
   }
-
-
 
   private transformYoutube(link: string): string {
     let videoId = '';
@@ -94,26 +102,23 @@ export class ItemComponent implements OnChanges, AfterViewInit {
     return `https://www.youtube.com/embed/${videoId}`;
   }
 
-
   ngOnInit() {
-
-    
-
-
     // Detecta si es móvil
     if (this.item.animationData) {
       this.lottieOptions = {
         animationData: this.item?.animationData || null,
         loop: true,
         autoplay: true,
-        renderer: this.isMobile ? 'canvas' : 'svg' // 👈 PC usa svg, móvil usa canvas
+        renderer: this.isMobile ? 'canvas' : 'svg', // 👈 PC usa svg, móvil usa canvas
       };
     }
 
-    console.log("Item recibidoooo:", this.item);
-    if (this.item?.link?.includes("youtube.com")) {
-      this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(this.item.link);
-      console.log("SafeUrl asignado:", this.safeUrl);
+    console.log('Item recibidoooo:', this.item);
+    if (this.item?.link?.includes('youtube.com')) {
+      this.safeUrl = this.sanitizer.bypassSecurityTrustResourceUrl(
+        this.item.link,
+      );
+      console.log('SafeUrl asignado:', this.safeUrl);
     }
 
     this.updateSafeUrl();
@@ -126,16 +131,14 @@ export class ItemComponent implements OnChanges, AfterViewInit {
     } else {
       console.log('Sticker recibido en item:', this.item);
     } */
-
   }
 
-
   getSafeYoutubeUrl(link: string): SafeResourceUrl {
-    let videoId = "";
-    if (link.includes("youtu.be/")) {
-      videoId = link.split("youtu.be/")[1].split("?")[0];
-    } else if (link.includes("v=")) {
-      videoId = link.split("v=")[1].split("&")[0];
+    let videoId = '';
+    if (link.includes('youtu.be/')) {
+      videoId = link.split('youtu.be/')[1].split('?')[0];
+    } else if (link.includes('v=')) {
+      videoId = link.split('v=')[1].split('&')[0];
     }
     const embedUrl = `https://www.youtube.com/embed/${videoId}`;
     return this.sanitizer.bypassSecurityTrustResourceUrl(embedUrl);
@@ -160,12 +163,10 @@ export class ItemComponent implements OnChanges, AfterViewInit {
     }
   }
 
-
   esYoutube(link?: string): boolean {
-    if (!link) return false;   // si no hay link, no intentes usar includes
-    return link.includes("youtube.com") || link.includes("youtu.be");
+    if (!link) return false; // si no hay link, no intentes usar includes
+    return link.includes('youtube.com') || link.includes('youtu.be');
   }
-
 
   // Soporta: watch?v=, youtu.be/, embed/, shorts/, m.youtube.com, + query params raros
   private extraerYoutubeId(url: string): string {
@@ -192,14 +193,22 @@ export class ItemComponent implements OnChanges, AfterViewInit {
   }
 
   // (tus otros helpers)
-  esLibro(link: string | undefined) { return !!link && link.includes('books.google'); }
-  esArticulo(link: string | undefined) { return !!link && link.includes('sciencedirect.com'); }
-  esPDF(link: string | undefined) { return !!link && link.toLowerCase().endsWith('.pdf'); }
+  esLibro(link: string | undefined) {
+    return !!link && link.includes('books.google');
+  }
+  esArticulo(link: string | undefined) {
+    return !!link && link.includes('sciencedirect.com');
+  }
+  esPDF(link: string | undefined) {
+    return !!link && link.toLowerCase().endsWith('.pdf');
+  }
   getPortadaLibro(link: string) {
     const m = link.match(/id=([^&]+)/);
     return m
       ? `https://books.google.com/books/content?id=${m[1]}&printsec=frontcover&img=1&zoom=1&source=gbs_api`
       : 'assets/img/book-placeholder.png';
   }
-  getPortadaArticulo(_: string) { return 'assets/img/article-placeholder.png'; }
+  getPortadaArticulo(_: string) {
+    return 'assets/img/article-placeholder.png';
+  }
 }
